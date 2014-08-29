@@ -1,5 +1,14 @@
 package complete
 
+import (
+	"bufio"
+	"fmt"
+	"os/exec"
+	"regexp"
+	"runtime"
+	"strings"
+)
+
 var funcs map[string]string
 
 func init() {
@@ -10,12 +19,6 @@ func Bash(line string) (completions []string) {
 	fields := strings.Fields(line)
 	bashCompletionFunc := funcs[fields[0]]
 
-	tmpfile, err := ioutil.TempFile("", cmdname)
-	if err != nil {
-		fmt.Println("Unable to create temporary file: ", err.Error())
-		return
-	}
-	tmpfile.Write([]byte(print_completions_src))
 	completionsCmd := exec.Command(
 		"env",
 		fmt.Sprintf("COMP_CWORD=%v", len(strings.Fields(line))-1),
@@ -23,7 +26,7 @@ func Bash(line string) (completions []string) {
 		fmt.Sprintf("COMP_POINT=%v", len(line)+1),
 		"bash", "-c",
 		fmt.Sprint(
-			fmt.Sprintf("source %v;", tmpfile.Name()),
+			fmt.Sprintf("%v;", print_completions_src),
 			fmt.Sprintf("COMP_WORDS=(%v);", line),
 			fmt.Sprintf(
 				"source %v; %v; ",
@@ -121,10 +124,4 @@ func brewPrefix() string {
 	return line[:len(line)-1]
 }
 
-const print_completions_src = `
-__print_completions() {
-    for ((i=0;i<${#COMPREPLY[*]};i++))
-        do echo ${COMPREPLY[i]}
-    done
-}
-`
+const print_completions_src = `__print_completions() { for ((i=0;i<${#COMPREPLY[*]};i++)); do echo ${COMPREPLY[i]};done; }`
